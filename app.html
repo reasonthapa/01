@@ -1,0 +1,1783 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Escrowly — App</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --red: #cc0000;
+        --red-bright: #ff1a1a;
+        --red-dark: #7a0000;
+        --red-glow: rgba(204, 0, 0, 0.4);
+        --black: #000000;
+        --black-mid: #0d0d0d;
+        --black-soft: #141414;
+        --black-card: #1a0000;
+        --white: #ffffff;
+        --white-dim: rgba(255, 255, 255, 0.9);
+        --white-faint: rgba(255, 255, 255, 0.14);
+        --mono: "Share Tech Mono", monospace;
+        --display: "Bebas Neue", sans-serif;
+        --body: "Rajdhani", sans-serif;
+      }
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        background: var(--black);
+        color: var(--white);
+        font-family: var(--body);
+        font-size: 17px;
+        overflow-x: hidden;
+        cursor: none;
+        min-height: 100vh;
+      }
+      .cursor {
+        position: fixed;
+        width: 12px;
+        height: 12px;
+        background: var(--red-bright);
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 9999;
+        transition: transform 0.1s ease;
+        mix-blend-mode: difference;
+      }
+      .cursor-ring {
+        position: fixed;
+        width: 36px;
+        height: 36px;
+        border: 1px solid var(--red);
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 9998;
+        transition:
+          transform 0.15s ease,
+          width 0.2s,
+          height 0.2s;
+        transform: translate(-50%, -50%);
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 1;
+        opacity: 0.5;
+      }
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(0, 0, 0, 0.06) 2px,
+          rgba(0, 0, 0, 0.06) 4px
+        );
+        pointer-events: none;
+        z-index: 2;
+      }
+
+      /* NAV */
+      nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 48px;
+        background: rgba(0, 0, 0, 0.97);
+        border-bottom: 1px solid rgba(204, 0, 0, 0.5);
+      }
+      .logo {
+        font-family: var(--display);
+        font-size: 24px;
+        letter-spacing: 3px;
+        color: var(--red-bright);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0;
+      }
+      .logo-icon {
+        width: 36px;
+        height: 36px;
+        flex-shrink: 0;
+        margin-right: 10px;
+      }
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+      .net-badge {
+        font-family: var(--mono);
+        font-size: 15px;
+        letter-spacing: 2px;
+        color: var(--red);
+        border: 1px solid rgba(204, 0, 0, 0.4);
+        padding: 4px 12px;
+        text-transform: uppercase;
+      }
+      .btn-connect {
+        background: var(--red);
+        color: var(--white);
+        padding: 10px 28px;
+        font-family: var(--display);
+        font-size: 16px;
+        letter-spacing: 2px;
+        border: none;
+        cursor: none;
+        clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+        transition:
+          background 0.2s,
+          box-shadow 0.2s;
+        text-transform: uppercase;
+      }
+      .btn-connect:hover {
+        background: var(--red-bright);
+        box-shadow: 0 0 24px var(--red-glow);
+      }
+      .btn-connect.connected {
+        background: rgba(204, 0, 0, 0.35);
+        border: 1px solid var(--red);
+        font-size: 15px;
+        letter-spacing: 1px;
+        font-family: var(--mono);
+        clip-path: none;
+      }
+      .wallet-addr {
+        font-family: var(--mono);
+        font-size: 14px;
+        color: var(--red-bright);
+        letter-spacing: 1px;
+      }
+      .back-link {
+        font-family: var(--mono);
+        font-size: 15px;
+        letter-spacing: 2px;
+        color: var(--white-dim);
+        text-decoration: none;
+        text-transform: uppercase;
+        transition: color 0.2s;
+      }
+      .back-link:hover {
+        color: var(--red-bright);
+      }
+
+      /* MAIN LAYOUT */
+      .app-main {
+        padding-top: 90px;
+        min-height: 100vh;
+        display: flex;
+      }
+
+      /* SIDEBAR */
+      .sidebar {
+        width: 240px;
+        flex-shrink: 0;
+        background: var(--black-mid);
+        border-right: 1px solid rgba(204, 0, 0, 0.35);
+        padding: 40px 0;
+        position: fixed;
+        top: 72px;
+        left: 0;
+        bottom: 0;
+        z-index: 50;
+        overflow-y: auto;
+      }
+      .sidebar-label {
+        font-family: var(--mono);
+        font-size: 15px;
+        letter-spacing: 3px;
+        color: rgba(220, 30, 30, 0.95);
+        text-transform: uppercase;
+        padding: 0 28px;
+        margin-bottom: 12px;
+        margin-top: 28px;
+      }
+      .sidebar-label:first-child {
+        margin-top: 0;
+      }
+      .sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 12px 28px;
+        font-family: var(--mono);
+        font-size: 14px;
+        letter-spacing: 1px;
+        color: var(--white-dim);
+        text-decoration: none;
+        text-transform: uppercase;
+        transition:
+          background 0.2s,
+          color 0.2s;
+        border-left: 2px solid transparent;
+        cursor: none;
+      }
+      .sidebar-item:hover {
+        background: rgba(204, 0, 0, 0.08);
+        color: var(--white);
+      }
+      .sidebar-item.active {
+        background: rgba(204, 0, 0, 0.12);
+        color: var(--white);
+        border-left-color: var(--red-bright);
+      }
+      .sidebar-icon {
+        width: 16px;
+        height: 16px;
+        opacity: 0.9;
+      }
+      .sidebar-item.active .sidebar-icon {
+        opacity: 1;
+      }
+
+      /* CONTENT */
+      .app-content {
+        margin-left: 240px;
+        flex: 1;
+        padding: 48px 56px;
+        position: relative;
+        z-index: 3;
+      }
+
+      /* PAGE HEADER */
+      .page-header {
+        margin-bottom: 40px;
+      }
+      .page-tag {
+        font-family: var(--mono);
+        font-size: 15px;
+        letter-spacing: 4px;
+        color: var(--red);
+        text-transform: uppercase;
+        margin-bottom: 8px;
+      }
+      .page-title {
+        font-family: var(--display);
+        font-size: 48px;
+        letter-spacing: 2px;
+        line-height: 1;
+      }
+      .page-title span {
+        color: var(--red-bright);
+      }
+
+      /* STAT CARDS */
+      .stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 2px;
+        margin-bottom: 48px;
+        background: rgba(204, 0, 0, 0.22);
+      }
+      .stat-card {
+        background: var(--black);
+        padding: 28px 32px;
+        border-top: 2px solid transparent;
+        transition: border-color 0.3s;
+      }
+      .stat-card:hover {
+        border-top-color: var(--red);
+      }
+      .stat-card-label {
+        font-family: var(--mono);
+        font-size: 15px;
+        letter-spacing: 3px;
+        color: var(--white-dim);
+        text-transform: uppercase;
+        margin-bottom: 12px;
+      }
+      .stat-card-value {
+        font-family: var(--display);
+        font-size: 36px;
+        letter-spacing: 2px;
+        color: var(--red-bright);
+      }
+      .stat-card-sub {
+        font-family: var(--mono);
+        font-size: 15px;
+        color: rgba(255, 255, 255, 0.72);
+        margin-top: 4px;
+        letter-spacing: 1px;
+      }
+
+      /* PANEL */
+      .panel {
+        background: var(--black-soft);
+        border: 1px solid rgba(204, 0, 0, 0.35);
+        margin-bottom: 28px;
+        position: relative;
+        overflow: hidden;
+      }
+      .panel::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(to right, var(--red), var(--red-bright));
+      }
+      .panel-header {
+        padding: 20px 32px;
+        border-bottom: 1px solid rgba(204, 0, 0, 0.22);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .panel-title {
+        font-family: var(--display);
+        font-size: 20px;
+        letter-spacing: 2px;
+      }
+      .panel-tag {
+        font-family: var(--mono);
+        font-size: 15px;
+        letter-spacing: 2px;
+        color: var(--red);
+        text-transform: uppercase;
+      }
+      .panel-body {
+        padding: 32px;
+      }
+
+      /* FORM */
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+      }
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .form-group.full {
+        grid-column: 1/-1;
+      }
+      .form-label {
+        font-family: var(--mono);
+        font-size: 15px;
+        letter-spacing: 2px;
+        color: var(--red);
+        text-transform: uppercase;
+      }
+      .form-input {
+        background: var(--black);
+        border: 1px solid rgba(204, 0, 0, 0.5);
+        color: var(--white);
+        font-family: var(--mono);
+        font-size: 15px;
+        padding: 14px 18px;
+        outline: none;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
+        width: 100%;
+        clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+      }
+      .form-input:focus {
+        border-color: var(--red-bright);
+        box-shadow: 0 0 16px rgba(204, 0, 0, 0.45);
+      }
+      .form-input::placeholder {
+        color: rgba(255, 255, 255, 0.6);
+      }
+      select.form-input {
+        cursor: none;
+      }
+      select.form-input option {
+        background: var(--black);
+      }
+      .form-hint {
+        font-family: var(--mono);
+        font-size: 15px;
+        color: rgba(255, 255, 255, 0.72);
+        letter-spacing: 1px;
+      }
+      .form-actions {
+        display: flex;
+        gap: 16px;
+        margin-top: 8px;
+        align-items: center;
+      }
+
+      .btn-primary {
+        background: var(--red);
+        color: var(--white);
+        padding: 14px 36px;
+        font-family: var(--display);
+        font-size: 20px;
+        letter-spacing: 3px;
+        border: none;
+        cursor: none;
+        clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+        transition:
+          background 0.2s,
+          box-shadow 0.2s;
+        text-transform: uppercase;
+        display: inline-block;
+      }
+      .btn-primary:hover {
+        background: var(--red-bright);
+        box-shadow: 0 0 32px var(--red-glow);
+      }
+      .btn-primary:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--white-dim);
+        padding: 14px 28px;
+        font-family: var(--mono);
+        font-size: 14px;
+        letter-spacing: 2px;
+        border: 1px solid rgba(204, 0, 0, 0.55);
+        cursor: none;
+        transition:
+          border-color 0.2s,
+          color 0.2s;
+        text-transform: uppercase;
+      }
+      .btn-ghost:hover {
+        border-color: var(--red);
+        color: var(--white);
+      }
+
+      /* ESCROW TABLE */
+      .escrow-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .escrow-table th {
+        font-family: var(--mono);
+        font-size: 15px;
+        letter-spacing: 3px;
+        color: var(--red);
+        text-transform: uppercase;
+        text-align: left;
+        padding: 0 20px 16px;
+        border-bottom: 1px solid rgba(204, 0, 0, 0.45);
+      }
+      .escrow-table td {
+        padding: 18px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        vertical-align: middle;
+      }
+      .escrow-row {
+        transition: background 0.2s;
+      }
+      .escrow-row:hover {
+        background: rgba(204, 0, 0, 0.05);
+      }
+      .escrow-id {
+        font-family: var(--mono);
+        font-size: 14px;
+        color: var(--red-bright);
+        letter-spacing: 1px;
+      }
+      .escrow-desc {
+        font-size: 14px;
+        color: var(--white);
+        font-weight: 500;
+      }
+      .escrow-sub {
+        font-family: var(--mono);
+        font-size: 15px;
+        color: var(--white-dim);
+        margin-top: 4px;
+        letter-spacing: 1px;
+      }
+      .escrow-amount {
+        font-family: var(--display);
+        font-size: 22px;
+        letter-spacing: 1px;
+        color: var(--white);
+      }
+      .escrow-amount span {
+        font-family: var(--mono);
+        font-size: 14px;
+        color: var(--white-dim);
+        margin-left: 4px;
+      }
+      .badge {
+        font-family: var(--mono);
+        font-size: 15px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        padding: 4px 12px;
+        display: inline-block;
+      }
+      .badge-pending {
+        background: rgba(204, 100, 0, 0.15);
+        color: #ff8c00;
+        border: 1px solid rgba(204, 100, 0, 0.3);
+      }
+      .badge-funded {
+        background: rgba(0, 100, 200, 0.15);
+        color: #4fc3f7;
+        border: 1px solid rgba(0, 100, 200, 0.3);
+      }
+      .badge-released {
+        background: rgba(0, 160, 60, 0.15);
+        color: #66bb6a;
+        border: 1px solid rgba(0, 160, 60, 0.3);
+      }
+      .badge-disputed {
+        background: rgba(204, 0, 0, 0.35);
+        color: var(--red-bright);
+        border: 1px solid rgba(204, 0, 0, 0.55);
+      }
+      .action-btns {
+        display: flex;
+        gap: 8px;
+      }
+      .btn-action {
+        font-family: var(--mono);
+        font-size: 15px;
+        letter-spacing: 1px;
+        padding: 6px 14px;
+        border: 1px solid;
+        text-transform: uppercase;
+        background: transparent;
+        cursor: none;
+        transition:
+          background 0.2s,
+          color 0.2s;
+      }
+      .btn-release {
+        border-color: rgba(0, 160, 60, 0.5);
+        color: #66bb6a;
+      }
+      .btn-release:hover {
+        background: rgba(0, 160, 60, 0.15);
+      }
+      .btn-refund {
+        border-color: rgba(204, 0, 0, 0.4);
+        color: var(--red-bright);
+      }
+      .btn-refund:hover {
+        background: rgba(204, 0, 0, 0.35);
+      }
+      .btn-view {
+        border-color: rgba(255, 255, 255, 0.15);
+        color: var(--white-dim);
+      }
+      .btn-view:hover {
+        border-color: var(--red);
+        color: var(--white);
+      }
+      .empty-state {
+        text-align: center;
+        padding: 80px 40px;
+      }
+      .empty-state-icon {
+        font-size: 48px;
+        margin-bottom: 20px;
+        opacity: 0.3;
+      }
+      .empty-state-text {
+        font-family: var(--display);
+        font-size: 24px;
+        letter-spacing: 2px;
+        color: rgba(255, 255, 255, 0.72);
+        margin-bottom: 8px;
+      }
+      .empty-state-sub {
+        font-family: var(--mono);
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.6);
+        letter-spacing: 1px;
+      }
+
+      /* WALLET GATE */
+      .wallet-gate {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 60vh;
+        text-align: center;
+      }
+      .wallet-gate-icon {
+        width: 80px;
+        height: 80px;
+        border: 1px solid rgba(204, 0, 0, 0.55);
+        display: grid;
+        place-items: center;
+        margin-bottom: 32px;
+        font-size: 32px;
+        animation: pulse-border 3s ease-in-out infinite;
+      }
+      @keyframes pulse-border {
+        0%,
+        100% {
+          border-color: rgba(204, 0, 0, 0.55);
+          box-shadow: none;
+        }
+        50% {
+          border-color: var(--red);
+          box-shadow: 0 0 30px rgba(204, 0, 0, 0.55);
+        }
+      }
+      .wallet-gate-title {
+        font-family: var(--display);
+        font-size: 40px;
+        letter-spacing: 2px;
+        margin-bottom: 12px;
+      }
+      .wallet-gate-sub {
+        font-family: var(--mono);
+        font-size: 15px;
+        color: var(--white-dim);
+        letter-spacing: 1px;
+        margin-bottom: 36px;
+        line-height: 1.8;
+      }
+
+      /* TOAST */
+      .toast {
+        position: fixed;
+        bottom: 32px;
+        right: 32px;
+        z-index: 999;
+        background: var(--black-soft);
+        border: 1px solid rgba(204, 0, 0, 0.4);
+        border-left: 3px solid var(--red-bright);
+        padding: 16px 24px;
+        min-width: 300px;
+        font-family: var(--mono);
+        font-size: 15px;
+        letter-spacing: 1px;
+        transform: translateX(120%);
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
+      }
+      .toast.show {
+        transform: translateX(0);
+      }
+      .toast-title {
+        color: var(--red-bright);
+        font-size: 15px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+      .toast-msg {
+        color: var(--white-dim);
+      }
+
+      /* STEPS PROGRESS */
+      .step-progress {
+        display: flex;
+        align-items: center;
+        margin-bottom: 32px;
+      }
+      .step-dot {
+        width: 32px;
+        height: 32px;
+        border-radius: 0;
+        border: 1px solid rgba(204, 0, 0, 0.55);
+        display: grid;
+        place-items: center;
+        font-family: var(--mono);
+        font-size: 14px;
+        color: var(--white-dim);
+        transition: all 0.3s;
+        flex-shrink: 0;
+      }
+      .step-dot.active {
+        border-color: var(--red);
+        color: var(--white);
+        box-shadow: 0 0 12px rgba(204, 0, 0, 0.55);
+      }
+      .step-dot.done {
+        background: var(--red);
+        border-color: var(--red);
+        color: var(--white);
+      }
+      .step-line {
+        flex: 1;
+        height: 1px;
+        background: rgba(204, 0, 0, 0.45);
+        margin: 0 8px;
+      }
+      .step-line.done {
+        background: var(--red);
+      }
+      .step-label {
+        font-family: var(--mono);
+        font-size: 15px;
+        letter-spacing: 1px;
+        color: rgba(255, 255, 255, 0.72);
+        margin-top: 6px;
+        text-transform: uppercase;
+        text-align: center;
+      }
+      .step-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      /* LOADING SPINNER */
+      .spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(204, 0, 0, 0.45);
+        border-top-color: var(--red-bright);
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        display: inline-block;
+        vertical-align: middle;
+        margin-right: 10px;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* TAB NAV */
+      .tabs {
+        display: flex;
+        gap: 0;
+        border-bottom: 1px solid rgba(204, 0, 0, 0.35);
+        margin-bottom: 36px;
+      }
+      .tab {
+        font-family: var(--mono);
+        font-size: 14px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        padding: 14px 28px;
+        color: var(--white-dim);
+        cursor: none;
+        border-bottom: 2px solid transparent;
+        transition:
+          color 0.2s,
+          border-color 0.2s;
+        background: none;
+        border-left: none;
+        border-top: none;
+        border-right: none;
+      }
+      .tab:hover {
+        color: var(--white);
+      }
+      .tab.active {
+        color: var(--red-bright);
+        border-bottom-color: var(--red-bright);
+      }
+
+      /* PAGE VIEWS */
+      .view {
+        display: none;
+      }
+      .view.active {
+        display: block;
+      }
+
+      /* GRID BACKGROUND */
+      .grid-bg {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        background-image:
+          linear-gradient(rgba(204, 0, 0, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(204, 0, 0, 0.03) 1px, transparent 1px);
+        background-size: 60px 60px;
+      }
+
+      /* MODAL */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 500;
+        background: rgba(0, 0, 0, 0.85);
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+      .modal-overlay.show {
+        display: flex;
+      }
+      .modal {
+        background: var(--black-soft);
+        border: 1px solid rgba(204, 0, 0, 0.55);
+        width: 560px;
+        max-width: 95vw;
+        position: relative;
+        overflow: hidden;
+      }
+      .modal::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(to right, var(--red), var(--red-bright));
+      }
+      .modal-header {
+        padding: 24px 32px;
+        border-bottom: 1px solid rgba(204, 0, 0, 0.35);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .modal-title {
+        font-family: var(--display);
+        font-size: 24px;
+        letter-spacing: 2px;
+      }
+      .modal-close {
+        background: none;
+        border: none;
+        color: var(--white-dim);
+        font-size: 20px;
+        cursor: none;
+        transition: color 0.2s;
+        line-height: 1;
+      }
+      .modal-close:hover {
+        color: var(--red-bright);
+      }
+      .modal-body {
+        padding: 32px;
+      }
+      .modal-detail {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .modal-detail:last-child {
+        border-bottom: none;
+      }
+      .modal-detail-label {
+        font-family: var(--mono);
+        font-size: 15px;
+        letter-spacing: 2px;
+        color: rgba(204, 0, 0, 0.8);
+        text-transform: uppercase;
+      }
+      .modal-detail-value {
+        font-family: var(--mono);
+        font-size: 15px;
+        color: var(--white);
+        letter-spacing: 1px;
+        max-width: 280px;
+        word-break: break-all;
+        text-align: right;
+      }
+
+      @media (max-width: 900px) {
+        nav {
+          padding: 14px 20px;
+        }
+        .sidebar {
+          display: none;
+        }
+        .app-content {
+          margin-left: 0;
+          padding: 24px 20px;
+        }
+        .stats-row {
+          grid-template-columns: 1fr 1fr;
+        }
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+        .tabs {
+          overflow-x: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="cursor" id="cursor"></div>
+    <div class="cursor-ring" id="cursorRing"></div>
+    <div class="grid-bg"></div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast">
+      <div class="toast-title" id="toast-title">Info</div>
+      <div class="toast-msg" id="toast-msg">Message</div>
+    </div>
+
+    <!-- MODAL: Escrow Detail -->
+    <div class="modal-overlay" id="modal">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title">
+            ESCROW
+            <span style="color: var(--red-bright)" id="modal-id">#0001</span>
+          </div>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-detail">
+            <div class="modal-detail-label">Description</div>
+            <div class="modal-detail-value" id="modal-desc">—</div>
+          </div>
+          <div class="modal-detail">
+            <div class="modal-detail-label">Amount</div>
+            <div class="modal-detail-value" id="modal-amount">—</div>
+          </div>
+          <div class="modal-detail">
+            <div class="modal-detail-label">Seller Wallet</div>
+            <div class="modal-detail-value" id="modal-seller">—</div>
+          </div>
+          <div class="modal-detail">
+            <div class="modal-detail-label">Status</div>
+            <div class="modal-detail-value" id="modal-status">—</div>
+          </div>
+          <div class="modal-detail">
+            <div class="modal-detail-label">Token</div>
+            <div class="modal-detail-value" id="modal-token">—</div>
+          </div>
+          <div class="modal-detail">
+            <div class="modal-detail-label">Created</div>
+            <div class="modal-detail-value" id="modal-date">—</div>
+          </div>
+          <div class="modal-detail">
+            <div class="modal-detail-label">TX Signature (simulated)</div>
+            <div
+              class="modal-detail-value"
+              style="color: var(--red-bright); font-size: 15px"
+              id="modal-tx"
+            >
+              —
+            </div>
+          </div>
+          <div
+            style="margin-top: 24px; display: flex; gap: 12px"
+            id="modal-actions"
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NAV -->
+    <nav>
+      <a class="logo" href="index.html">
+        <svg
+          class="logo-icon"
+          viewBox="0 0 100 115"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <polygon
+            points="50,2 98,27 98,88 50,113 2,88 2,27"
+            fill="#2a0000"
+            stroke="#CC0000"
+            stroke-width="4"
+          />
+          <polygon
+            points="50,10 90,32 90,83 50,105 10,83 10,32"
+            fill="#1a0000"
+          />
+          <text
+            x="50"
+            y="74"
+            text-anchor="middle"
+            font-family="Bebas Neue, sans-serif"
+            font-size="52"
+            fill="#CC0000"
+            letter-spacing="2"
+          >
+            E
+          </text>
+        </svg>
+        <span style="color: #fff">ESCROW</span
+        ><span style="color: var(--red-bright)">LY</span>
+      </a>
+      <div class="nav-right">
+        <span class="net-badge">◉ Devnet</span>
+        <a href="index.html" class="back-link">← Home</a>
+        <button class="btn-connect" id="connectBtn" onclick="toggleWallet()">
+          CONNECT WALLET
+        </button>
+      </div>
+    </nav>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-label">Navigation</div>
+      <a
+        href="#"
+        class="sidebar-item active"
+        onclick="showView('dashboard', this)"
+      >
+        <svg
+          class="sidebar-icon"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+        >
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+        </svg>
+        Dashboard
+      </a>
+      <a href="#" class="sidebar-item" onclick="showView('create', this)">
+        <svg
+          class="sidebar-icon"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="16" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+        </svg>
+        New Escrow
+      </a>
+      <a href="#" class="sidebar-item" onclick="showView('history', this)">
+        <svg
+          class="sidebar-icon"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+        >
+          <polyline points="12 8 12 12 14 14" />
+          <path d="M3.05 11a9 9 0 1 0 .5-4.5" />
+          <polyline points="3 3 3 11 11 11" />
+        </svg>
+        History
+      </a>
+      <div class="sidebar-label">Resources</div>
+      <a href="guide.html" class="sidebar-item">
+        <svg
+          class="sidebar-icon"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+        >
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+          <path
+            d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+          />
+        </svg>
+        Setup Guide
+      </a>
+    </div>
+
+    <!-- APP CONTENT -->
+    <div class="app-main">
+      <div class="app-content">
+        <!-- WALLET GATE (shown when not connected) -->
+        <div id="walletGate" class="wallet-gate">
+          <div class="wallet-gate-icon">🔐</div>
+          <div class="wallet-gate-title">
+            CONNECT <span style="color: var(--red-bright)">WALLET</span>
+          </div>
+          <p class="wallet-gate-sub">
+            Connect your Phantom or Backpack wallet to access<br />
+            the Escrowly protocol on Solana Devnet.
+          </p>
+          <button class="btn-primary" onclick="toggleWallet()">
+            CONNECT WALLET
+          </button>
+        </div>
+
+        <!-- APP VIEWS (hidden until wallet connected) -->
+        <div id="appViews" style="display: none">
+          <!-- DASHBOARD VIEW -->
+          <div class="view active" id="view-dashboard">
+            <div class="page-header">
+              <div class="page-tag">// Overview</div>
+              <h1 class="page-title">DASH<span>BOARD</span></h1>
+            </div>
+
+            <div class="stats-row">
+              <div class="stat-card">
+                <div class="stat-card-label">Active Escrows</div>
+                <div class="stat-card-value" id="stat-active">0</div>
+                <div class="stat-card-sub">As buyer</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-card-label">Total Locked</div>
+                <div class="stat-card-value" id="stat-locked">0</div>
+                <div class="stat-card-sub">SOL on-chain</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-card-label">Completed</div>
+                <div class="stat-card-value" id="stat-done">0</div>
+                <div class="stat-card-sub">Released</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-card-label">Network</div>
+                <div
+                  class="stat-card-value"
+                  style="font-size: 24px; letter-spacing: 1px"
+                >
+                  DEVNET
+                </div>
+                <div class="stat-card-sub">Solana</div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">MY ESCROWS</div>
+                <div class="panel-tag">// Active contracts</div>
+              </div>
+              <div class="panel-body" style="padding: 0">
+                <div id="escrowListContainer"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CREATE ESCROW VIEW -->
+          <div class="view" id="view-create">
+            <div class="page-header">
+              <div class="page-tag">// New Contract</div>
+              <h1 class="page-title">CREATE <span>ESCROW</span></h1>
+            </div>
+
+            <!-- Step progress -->
+            <div
+              style="
+                display: flex;
+                align-items: flex-start;
+                margin-bottom: 40px;
+                gap: 0;
+              "
+            >
+              <div class="step-item">
+                <div class="step-dot active" id="sp1">1</div>
+                <div class="step-label">Details</div>
+              </div>
+              <div class="step-line" id="sl1"></div>
+              <div class="step-item">
+                <div class="step-dot" id="sp2">2</div>
+                <div class="step-label">Confirm</div>
+              </div>
+              <div class="step-line" id="sl2"></div>
+              <div class="step-item">
+                <div class="step-dot" id="sp3">3</div>
+                <div class="step-label">On-Chain</div>
+              </div>
+            </div>
+
+            <!-- STEP 1: FORM -->
+            <div id="createStep1">
+              <div class="panel">
+                <div class="panel-header">
+                  <div class="panel-title">ESCROW DETAILS</div>
+                  <div class="panel-tag">// Fill in contract terms</div>
+                </div>
+                <div class="panel-body">
+                  <div class="form-grid">
+                    <div class="form-group">
+                      <label class="form-label">Seller Wallet Address</label>
+                      <input
+                        class="form-input"
+                        id="f-seller"
+                        type="text"
+                        placeholder="e.g. 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU"
+                      />
+                      <span class="form-hint"
+                        >// The recipient who will receive funds on
+                        release</span
+                      >
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Amount</label>
+                      <input
+                        class="form-input"
+                        id="f-amount"
+                        type="number"
+                        placeholder="e.g. 1.5"
+                        min="0.001"
+                        step="0.001"
+                      />
+                      <span class="form-hint">// Amount in selected token</span>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Token</label>
+                      <select class="form-input" id="f-token">
+                        <option value="SOL">SOL — Native Solana</option>
+                        <option value="USDC">USDC — USD Coin (SPL)</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Deadline (optional)</label>
+                      <input class="form-input" id="f-deadline" type="date" />
+                      <span class="form-hint">// Auto-refund trigger date</span>
+                    </div>
+                    <div class="form-group full">
+                      <label class="form-label">Service Description</label>
+                      <input
+                        class="form-input"
+                        id="f-desc"
+                        type="text"
+                        placeholder="e.g. Logo design for Escrowly — 3 revisions included"
+                      />
+                      <span class="form-hint"
+                        >// Stored off-chain for your reference</span
+                      >
+                    </div>
+                    <div class="form-group full">
+                      <label class="form-label"
+                        >Milestones / Conditions (optional)</label
+                      >
+                      <input
+                        class="form-input"
+                        id="f-milestones"
+                        type="text"
+                        placeholder="e.g. Draft in 3 days, final in 7 days"
+                      />
+                      <span class="form-hint"
+                        >// Define what completion looks like</span
+                      >
+                    </div>
+                  </div>
+                  <div class="form-actions" style="margin-top: 32px">
+                    <button class="btn-primary" onclick="goToConfirm()">
+                      REVIEW & CONFIRM →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- STEP 2: CONFIRM -->
+            <div id="createStep2" style="display: none">
+              <div class="panel">
+                <div class="panel-header">
+                  <div class="panel-title">CONFIRM TRANSACTION</div>
+                  <div class="panel-tag">// Review before signing</div>
+                </div>
+                <div class="panel-body">
+                  <div
+                    style="
+                      background: var(--black);
+                      border: 1px solid rgba(204, 0, 0, 0.45);
+                      padding: 28px;
+                      margin-bottom: 28px;
+                    "
+                  >
+                    <div class="modal-detail">
+                      <div class="modal-detail-label">Description</div>
+                      <div class="modal-detail-value" id="conf-desc">—</div>
+                    </div>
+                    <div class="modal-detail">
+                      <div class="modal-detail-label">Seller</div>
+                      <div
+                        class="modal-detail-value"
+                        id="conf-seller"
+                        style="font-size: 15px"
+                      >
+                        —
+                      </div>
+                    </div>
+                    <div class="modal-detail">
+                      <div class="modal-detail-label">Amount</div>
+                      <div
+                        class="modal-detail-value"
+                        id="conf-amount"
+                        style="
+                          font-family: var(--display);
+                          font-size: 28px;
+                          color: var(--red-bright);
+                        "
+                      >
+                        —
+                      </div>
+                    </div>
+                    <div class="modal-detail">
+                      <div class="modal-detail-label">Token</div>
+                      <div class="modal-detail-value" id="conf-token">—</div>
+                    </div>
+                    <div class="modal-detail">
+                      <div class="modal-detail-label">Deadline</div>
+                      <div class="modal-detail-value" id="conf-deadline">
+                        No deadline
+                      </div>
+                    </div>
+                    <div class="modal-detail">
+                      <div class="modal-detail-label">Network Fee</div>
+                      <div
+                        class="modal-detail-value"
+                        style="color: rgba(255, 255, 255, 0.4)"
+                      >
+                        ~0.000005 SOL
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      background: rgba(204, 0, 0, 0.05);
+                      border-left: 3px solid var(--red);
+                      padding: 16px 20px;
+                      margin-bottom: 28px;
+                      font-family: var(--mono);
+                      font-size: 14px;
+                      color: var(--white-dim);
+                      line-height: 1.8;
+                    "
+                  >
+                    ⚠ By signing this transaction, you agree to lock your funds
+                    in a Solana smart contract PDA until the service is verified
+                    and released, or until you initiate a refund.
+                  </div>
+                  <div class="form-actions">
+                    <button class="btn-primary" onclick="submitEscrow()">
+                      SIGN &amp; DEPLOY
+                    </button>
+                    <button class="btn-ghost" onclick="backToForm()">
+                      ← BACK
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- STEP 3: SUCCESS -->
+            <div
+              id="createStep3"
+              style="display: none; text-align: center; padding: 60px 40px"
+            >
+              <div style="font-size: 60px; margin-bottom: 24px">✅</div>
+              <div class="page-title" style="margin-bottom: 16px">
+                ESCROW <span>DEPLOYED</span>
+              </div>
+              <p
+                style="
+                  font-family: var(--mono);
+                  font-size: 15px;
+                  color: var(--white-dim);
+                  letter-spacing: 1px;
+                  margin-bottom: 8px;
+                "
+              >
+                Transaction sent to Solana Devnet
+              </p>
+              <p
+                style="
+                  font-family: var(--mono);
+                  font-size: 15px;
+                  color: var(--red-bright);
+                  letter-spacing: 1px;
+                  margin-bottom: 40px;
+                "
+                id="deploy-tx"
+              >
+                TX: ...
+              </p>
+              <div style="display: flex; gap: 16px; justify-content: center">
+                <button
+                  class="btn-primary"
+                  onclick="
+                    showView('dashboard', null);
+                    resetForm();
+                  "
+                >
+                  VIEW DASHBOARD
+                </button>
+                <button class="btn-ghost" onclick="resetForm()">
+                  CREATE ANOTHER
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- HISTORY VIEW -->
+          <div class="view" id="view-history">
+            <div class="page-header">
+              <div class="page-tag">// Transaction Log</div>
+              <h1 class="page-title">ESCROW <span>HISTORY</span></h1>
+            </div>
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">ALL TRANSACTIONS</div>
+                <div class="panel-tag">// Completed &amp; cancelled</div>
+              </div>
+              <div class="panel-body" style="padding: 0">
+                <div id="historyListContainer"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- /appViews -->
+      </div>
+      <!-- /app-content -->
+    </div>
+    <!-- /app-main -->
+
+    <script>
+      // ─── STATE ───────────────────────────────────────────────────────────────────
+      let walletConnected = false;
+      let walletAddress = "";
+      let escrows = JSON.parse(
+        localStorage.getItem("escrowly_escrows") || "[]",
+      );
+      let currentView = "dashboard";
+
+      // ─── CURSOR ──────────────────────────────────────────────────────────────────
+      const cursor = document.getElementById("cursor");
+      const ring = document.getElementById("cursorRing");
+      let mx = 0,
+        my = 0,
+        rx = 0,
+        ry = 0;
+      document.addEventListener("mousemove", (e) => {
+        mx = e.clientX;
+        my = e.clientY;
+        cursor.style.transform = `translate(${mx - 6}px, ${my - 6}px)`;
+      });
+      (function animRing() {
+        rx += (mx - rx) * 0.12;
+        ry += (my - ry) * 0.12;
+        ring.style.transform = `translate(${rx - 18}px, ${ry - 18}px)`;
+        requestAnimationFrame(animRing);
+      })();
+      document.addEventListener("mouseover", (e) => {
+        if (e.target.matches("a,button,input,select")) {
+          ring.style.width = "52px";
+          ring.style.height = "52px";
+        } else {
+          ring.style.width = "36px";
+          ring.style.height = "36px";
+        }
+      });
+
+      // ─── TOAST ───────────────────────────────────────────────────────────────────
+      function showToast(title, msg, duration = 3500) {
+        const t = document.getElementById("toast");
+        document.getElementById("toast-title").textContent = title;
+        document.getElementById("toast-msg").textContent = msg;
+        t.classList.add("show");
+        setTimeout(() => t.classList.remove("show"), duration);
+      }
+
+      // ─── WALLET ───────────────────────────────────────────────────────────────────
+      function mockAddress() {
+        const chars =
+          "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+        let a = "";
+        for (let i = 0; i < 44; i++)
+          a += chars[Math.floor(Math.random() * chars.length)];
+        return a;
+      }
+
+      function toggleWallet() {
+        if (walletConnected) {
+          walletConnected = false;
+          walletAddress = "";
+          const btn = document.getElementById("connectBtn");
+          btn.textContent = "CONNECT WALLET";
+          btn.className = "btn-connect";
+          document.getElementById("walletGate").style.display = "flex";
+          document.getElementById("appViews").style.display = "none";
+          showToast("WALLET", "Disconnected from Escrowly.");
+        } else {
+          walletAddress = mockAddress();
+          walletConnected = true;
+          const btn = document.getElementById("connectBtn");
+          btn.textContent =
+            walletAddress.slice(0, 4) + "..." + walletAddress.slice(-4) + " ✕";
+          btn.className = "btn-connect connected";
+          document.getElementById("walletGate").style.display = "none";
+          document.getElementById("appViews").style.display = "block";
+          renderDashboard();
+          showToast("WALLET CONNECTED", "Phantom wallet connected on Devnet.");
+        }
+      }
+
+      // ─── VIEW NAV ─────────────────────────────────────────────────────────────────
+      function showView(name, el) {
+        document
+          .querySelectorAll(".view")
+          .forEach((v) => v.classList.remove("active"));
+        document.getElementById("view-" + name).classList.add("active");
+        document
+          .querySelectorAll(".sidebar-item")
+          .forEach((s) => s.classList.remove("active"));
+        if (el) el.classList.add("active");
+        currentView = name;
+        if (name === "dashboard") renderDashboard();
+        if (name === "history") renderHistory();
+        return false;
+      }
+
+      // ─── RENDER ESCROW TABLE ──────────────────────────────────────────────────────
+      function statusBadge(s) {
+        const map = {
+          funded: '<span class="badge badge-funded">FUNDED</span>',
+          pending: '<span class="badge badge-pending">PENDING</span>',
+          released: '<span class="badge badge-released">RELEASED</span>',
+          disputed: '<span class="badge badge-disputed">DISPUTED</span>',
+          refunded: '<span class="badge badge-released">REFUNDED</span>',
+        };
+        return map[s] || "";
+      }
+
+      function renderEscrowTable(list, container, mode) {
+        if (!list.length) {
+          container.innerHTML = `<div class="empty-state">
+      <div class="empty-state-icon">🔒</div>
+      <div class="empty-state-text">NO ESCROWS FOUND</div>
+      <div class="empty-state-sub">// Create your first escrow to get started</div>
+    </div>`;
+          return;
+        }
+        let rows = list
+          .map((e) => {
+            const actionBtns =
+              mode === "active" && e.status === "funded"
+                ? `<button class="btn-action btn-release" onclick="releaseEscrow('${e.id}')">RELEASE</button>
+         <button class="btn-action btn-refund" onclick="refundEscrow('${e.id}')">REFUND</button>`
+                : "";
+            return `<tr class="escrow-row">
+      <td><div class="escrow-id">#${e.id}</div></td>
+      <td><div class="escrow-desc">${e.desc}</div><div class="escrow-sub">${e.seller.slice(0, 8)}...${e.seller.slice(-4)}</div></td>
+      <td><div class="escrow-amount">${e.amount}<span>${e.token}</span></div></td>
+      <td>${statusBadge(e.status)}</td>
+      <td><div class="action-btns">
+        ${actionBtns}
+        <button class="btn-action btn-view" onclick="openModal('${e.id}')">DETAILS</button>
+      </div></td>
+    </tr>`;
+          })
+          .join("");
+        container.innerHTML = `<table class="escrow-table">
+    <thead><tr>
+      <th>ID</th><th>Description</th><th>Amount</th><th>Status</th><th>Actions</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+      }
+
+      function renderDashboard() {
+        const active = escrows.filter((e) => e.status === "funded");
+        const done = escrows.filter((e) => e.status === "released");
+        const locked = active.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+        document.getElementById("stat-active").textContent = active.length;
+        document.getElementById("stat-locked").textContent = locked.toFixed(2);
+        document.getElementById("stat-done").textContent = done.length;
+        const container = document.getElementById("escrowListContainer");
+        const toShow = escrows.filter(
+          (e) => e.status !== "released" && e.status !== "refunded",
+        );
+        renderEscrowTable(toShow, container, "active");
+      }
+
+      function renderHistory() {
+        const container = document.getElementById("historyListContainer");
+        renderEscrowTable(escrows, container, "history");
+      }
+
+      // ─── CREATE ESCROW FLOW ───────────────────────────────────────────────────────
+      function goToConfirm() {
+        const seller = document.getElementById("f-seller").value.trim();
+        const amount = document.getElementById("f-amount").value.trim();
+        const token = document.getElementById("f-token").value;
+        const desc = document.getElementById("f-desc").value.trim();
+        const deadline = document.getElementById("f-deadline").value;
+
+        if (!seller || seller.length < 32)
+          return showToast(
+            "ERROR",
+            "Enter a valid Solana wallet address (32-44 chars).",
+          );
+        if (!amount || parseFloat(amount) <= 0)
+          return showToast("ERROR", "Enter a valid amount greater than 0.");
+        if (!desc) return showToast("ERROR", "Add a service description.");
+
+        document.getElementById("conf-desc").textContent = desc;
+        document.getElementById("conf-seller").textContent = seller;
+        document.getElementById("conf-amount").textContent =
+          amount + " " + token;
+        document.getElementById("conf-token").textContent = token;
+        document.getElementById("conf-deadline").textContent =
+          deadline || "No deadline set";
+
+        document.getElementById("createStep1").style.display = "none";
+        document.getElementById("createStep2").style.display = "block";
+        document.getElementById("sp1").className = "step-dot done";
+        document.getElementById("sp1").textContent = "✓";
+        document.getElementById("sp2").className = "step-dot active";
+        document.getElementById("sl1").className = "step-line done";
+      }
+
+      function backToForm() {
+        document.getElementById("createStep1").style.display = "block";
+        document.getElementById("createStep2").style.display = "none";
+        document.getElementById("sp1").className = "step-dot active";
+        document.getElementById("sp1").textContent = "1";
+        document.getElementById("sp2").className = "step-dot";
+        document.getElementById("sl1").className = "step-line";
+      }
+
+      function fakeTx() {
+        const chars = "0123456789abcdef";
+        let tx = "";
+        for (let i = 0; i < 88; i++)
+          tx += chars[Math.floor(Math.random() * chars.length)];
+        return tx;
+      }
+
+      function submitEscrow() {
+        const btn = document.querySelector("#createStep2 .btn-primary");
+        btn.innerHTML = '<span class="spinner"></span>SIGNING TX...';
+        btn.disabled = true;
+        setTimeout(() => {
+          const tx = fakeTx();
+          const id = String(escrows.length + 1).padStart(4, "0");
+          const escrow = {
+            id,
+            seller: document.getElementById("f-seller").value.trim(),
+            amount: document.getElementById("f-amount").value.trim(),
+            token: document.getElementById("f-token").value,
+            desc: document.getElementById("f-desc").value.trim(),
+            milestones: document.getElementById("f-milestones").value.trim(),
+            deadline: document.getElementById("f-deadline").value,
+            status: "funded",
+            tx,
+            created: new Date().toISOString(),
+          };
+          escrows.push(escrow);
+          localStorage.setItem("escrowly_escrows", JSON.stringify(escrows));
+
+          document.getElementById("createStep2").style.display = "none";
+          document.getElementById("createStep3").style.display = "block";
+          document.getElementById("deploy-tx").textContent =
+            "TX: " + tx.slice(0, 24) + "...";
+          document.getElementById("sp2").className = "step-dot done";
+          document.getElementById("sp2").textContent = "✓";
+          document.getElementById("sp3").className = "step-dot done";
+          document.getElementById("sp3").textContent = "✓";
+          document.getElementById("sl2").className = "step-line done";
+          showToast("SUCCESS", "Escrow deployed on Solana Devnet!", 5000);
+          btn.innerHTML = "SIGN &amp; DEPLOY";
+          btn.disabled = false;
+        }, 2000);
+      }
+
+      function resetForm() {
+        [
+          "f-seller",
+          "f-amount",
+          "f-desc",
+          "f-milestones",
+          "f-deadline",
+        ].forEach((id) => (document.getElementById(id).value = ""));
+        document.getElementById("f-token").value = "SOL";
+        document.getElementById("createStep1").style.display = "block";
+        document.getElementById("createStep2").style.display = "none";
+        document.getElementById("createStep3").style.display = "none";
+        ["sp1", "sp2", "sp3"].forEach((id, i) => {
+          const el = document.getElementById(id);
+          el.className = i === 0 ? "step-dot active" : "step-dot";
+          el.textContent = i + 1;
+        });
+        ["sl1", "sl2"].forEach(
+          (id) => (document.getElementById(id).className = "step-line"),
+        );
+      }
+
+      // ─── RELEASE / REFUND ────────────────────────────────────────────────────────
+      function releaseEscrow(id) {
+        const e = escrows.find((x) => x.id === id);
+        if (!e) return;
+        const btn = event.target;
+        btn.innerHTML = '<span class="spinner"></span>';
+        btn.disabled = true;
+        setTimeout(() => {
+          e.status = "released";
+          localStorage.setItem("escrowly_escrows", JSON.stringify(escrows));
+          showToast(
+            "RELEASED",
+            `Funds sent to seller — ${e.amount} ${e.token}`,
+          );
+          renderDashboard();
+        }, 1800);
+      }
+
+      function refundEscrow(id) {
+        const e = escrows.find((x) => x.id === id);
+        if (!e) return;
+        const btn = event.target;
+        btn.innerHTML = '<span class="spinner"></span>';
+        btn.disabled = true;
+        setTimeout(() => {
+          e.status = "refunded";
+          localStorage.setItem("escrowly_escrows", JSON.stringify(escrows));
+          showToast(
+            "REFUNDED",
+            `Funds returned to your wallet — ${e.amount} ${e.token}`,
+          );
+          renderDashboard();
+        }, 1800);
+      }
+
+      // ─── MODAL ───────────────────────────────────────────────────────────────────
+      function openModal(id) {
+        const e = escrows.find((x) => x.id === id);
+        if (!e) return;
+        document.getElementById("modal-id").textContent = "#" + e.id;
+        document.getElementById("modal-desc").textContent = e.desc;
+        document.getElementById("modal-amount").textContent =
+          e.amount + " " + e.token;
+        document.getElementById("modal-seller").textContent = e.seller;
+        document.getElementById("modal-status").innerHTML = statusBadge(
+          e.status,
+        );
+        document.getElementById("modal-token").textContent = e.token;
+        document.getElementById("modal-date").textContent = new Date(
+          e.created,
+        ).toLocaleString();
+        document.getElementById("modal-tx").textContent = e.tx
+          ? e.tx.slice(0, 32) + "..."
+          : "—";
+        const actions = document.getElementById("modal-actions");
+        actions.innerHTML =
+          e.status === "funded"
+            ? `<button class="btn-primary" style="font-size:14px; padding:10px 24px;" onclick="releaseEscrow('${e.id}'); closeModal()">RELEASE</button>
+       <button class="btn-ghost" style="font-size:11px; padding:10px 20px;" onclick="refundEscrow('${e.id}'); closeModal()">REFUND</button>`
+            : "";
+        document.getElementById("modal").classList.add("show");
+      }
+      function closeModal() {
+        document.getElementById("modal").classList.remove("show");
+      }
+      document.getElementById("modal").addEventListener("click", (e) => {
+        if (e.target.id === "modal") closeModal();
+      });
+    </script>
+  </body>
+</html>
